@@ -1,0 +1,56 @@
+import cv2
+colors = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0)}
+cap = cv2.VideoCapture('https://drive.google.com/file/d/1goI3aHVE29Gko9lpTzgi_g3CZZPjJq8w/view')
+
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
+
+# Define the quadrants (x, y, width, height)
+quadrants = [(0, 0, 320, 240), (320, 0, 320, 240), (0, 240, 320, 240), (320, 240, 320, 240)]
+
+# Initialize timestamp
+timestamp = 0
+
+# Process each frame
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Convert the frame to HSV color space
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    for color in colors:
+        # Define the lower and upper bounds for the color
+        lower = (colors[color][0] - 10, 100, 100)
+        upper = (colors[color][0] + 10, 255, 255)
+
+        # Create a mask for the color
+        mask = cv2.inRange(hsv, lower, upper)
+
+        # Find the contours in the mask
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        for cnt in contours:
+            # Get the bounding box of the contour
+            x, y, w, h = cv2.boundingRect(cnt)
+
+            # Check if the contour is within a quadrant
+            for i, quadrant in enumerate(quadrants):
+                if x > quadrant[0] and x + w < quadrant[0] + quadrant[2] and y > quadrant[1] and y + h < quadrant[1] + quadrant[3]:
+                    # Record the event
+                    print('Time:', timestamp, 'Quadrant:', i + 1, 'Color:', color, 'Type: Entry')
+    #Incrementing Timestamp
+    timestamp += 1
+    out.write(frame)
+
+    # Display the frame
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+cap.release()
+out.release()
+
+# Close all windows
+cv2.destroyAllWindows()
